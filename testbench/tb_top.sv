@@ -432,7 +432,11 @@ module tb_top;
         preload_iccm();
 
 `ifndef VERILATOR
-        if($test$plusargs("dumpon")) $dumpvars;
+ //       if($test$plusargs("dumpon")) $dumpvars;
+        if($test$plusargs("dumpon")) begin
+            $fsdbDumpfile("tb_top.fsdb");
+            $fsdbDumpvars();
+        end
         forever  core_clk = #5 ~core_clk;
 `endif
     end
