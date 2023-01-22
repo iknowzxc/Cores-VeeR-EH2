@@ -102,7 +102,7 @@ clean:
 	rm -rf *.log *.s *.hex *.dis *.tbl irun* vcs* simv* snapshots veer* \
 	verilator* *.map *.exe obj* *.o ucli.key vc_hdrs.h csrc *.csv \
 	work dataset.asdb  library.cfg vsimsa.cfg  riviera-build wave.asdb \
-	SimJTAG.so
+	SimJTAG.so *.fsdb 
 
 
 
@@ -201,6 +201,9 @@ program.hex: $(OFILES) $(LINK)
 endif
 endif
 
+###############################verdi###########################
+verdi:
+	verdi -ultra -ssf tb_top.fsdb -sverilog  -dbdir simv.daidir -top tb_top &
 
 help:
 	@echo Make sure the environment variable RV_ROOT is set.
