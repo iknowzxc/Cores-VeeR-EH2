@@ -140,7 +140,7 @@ The simulation generates the following files:
 * `exec.log` shows instruction trace with GPR updates.  
 * `trace_port.csv` contains a log of the trace port.   
 
-When `debug=1` is provided, a vcd file `sim.vcd` is created and can be browsed by gtkwave or similar waveform viewers.
+When `debug=1` is provided, a fsdb file `tb_top.fsdb` is created and can be browsed by gtkwave or similar waveform viewers.
   
 You can re-execute simulation using: `./obj_dir/Vtb_top` or `make -f $RV_ROOT/tools/Makefile verilator`
 
@@ -155,7 +155,7 @@ where:
 ```
 <simulator> - can be 'verilator' (by default) 'irun' - Cadence xrun, 'vcs' - Synopsys VCS, 'vlog' - Mentor Questa
               if not provided, 'make' cleans work directory, builds verilator executable and runs a test.
-debug=1     - allows VCD generation for verilator and VCS and SHM waves for irun option.
+debug=1     - allows fsdb generation for verilator and VCS and SHM waves for irun option.
 <target>    - predefined CPU configurations 'default' ( by default), 'default_mt', 'typical_pd', 'high_perf' 
 TEST        - allows to run a C (<test>.c) or assembly (<test>.s) test, hello_world is run by default 
 TEST_DIR    - alternative to test source directory testbench/asm
