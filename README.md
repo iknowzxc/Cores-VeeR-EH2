@@ -15,7 +15,7 @@ Files under the [tools](tools/) directory may be available under a different lic
 
     ├── configs                 # Configurations Dir
     ├── design                  # Design root dir
-    │   ├── dbg                 #   Debugger
+    │   ├── dbg                 #   Debugger
     │   ├── dec                 #   Decode, Registers and Exceptions
     │   ├── dmi                 #   DMI block
     │   ├── exu                 #   EXU (ALU/MUL/DIV)
@@ -39,7 +39,7 @@ installed so that it can be used to prepare RISC-V binaries to run.
 ## Quickstart guide
 
 1. Clone the repository
-1. Setup `RV_ROOT` to point to the path in your local filesystem
+1. run `source sourceme` under `tools` folder. Setup `RV_ROOT` to point to the path in your local filesystem
 1. Determine your configuration {optional}
 1. Run `make` with `tools/Makefile`
 
