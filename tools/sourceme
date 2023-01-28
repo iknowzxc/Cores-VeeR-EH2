@@ -1,1 +1,5 @@
+#bash
 export RV_ROOT=$(pwd)/..
+
+#cshell
+setenv RV_ROOT ${cwd}/..
