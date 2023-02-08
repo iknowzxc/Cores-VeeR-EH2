@@ -206,4 +206,5 @@ dhry_mt           - similar to above, but running two harts ( need to be run on 
 
 The `$RV_ROOT/testbench/hex` directory contains precompiled hex files of the tests, ready for simulation in case RISC-V SW tools are not installed.
 
+
 **Note**: The testbench has a simple synthesizable bridge that allows you to load the ICCM via load/store instructions. This is only supported for AXI4 builds.
