@@ -684,7 +684,8 @@ import eh2_pkg::*;
 
    rvoclkhdr activeclk (.*, .en(1'b1), .l1clk(active_clk));
 
-
+//by zinan
+//每个线程存在一个4深度ibufer
   for (genvar i=0; i<pt.NUM_THREADS; i++) begin : ib
 
 
@@ -766,7 +767,10 @@ import eh2_pkg::*;
 
 
    for (genvar i=0; i<pt.NUM_THREADS; i++) begin : arf
-
+//by zinan
+//ARF位置如下，每个线程有一个ARF，提供4读口、4写口，这部分逻辑很简单，读方向是4个31选1mux（X0为0），没有pipeline。
+//根据ARF的例化可以看到读写口如何分配。译码宽度2，ARF 4读口，每条指令占用2个读口。
+//4写口如何分配还不清楚，需要查看后级的连接关系 TODO
       eh2_dec_gpr_ctl #(.pt(pt)) arf (.*,
                                        .clk (active_thread_l2clk[i]),
                                        .tid (1'(i)),
@@ -832,7 +836,8 @@ import eh2_pkg::*;
       assign gpr_i1_rs2_d[31:0] = gpr_i1rs2_d[1] | gpr_i1rs2_d[0];
 
 
-
+//by zinan
+//由于双线程下有两个ibuf但只有1个dec，dec前需要放置一个arb在两个线程间做仲裁。
       rvarbiter2_smt dec_arbiter (
                                   .clk(active_clk),
                                   .flush(exu_flush_final[1:0]),

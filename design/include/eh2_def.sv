@@ -91,18 +91,19 @@ typedef struct packed {
                        logic legal4;
                        } eh2_predecode_pkt_t;
 
-
+//by zinan
+//ibufer的结构体声明
 typedef struct packed {
                         logic  [1:0]         icaf_type;
                         logic                icaf_second;
                         logic                dbecc;
                         logic                icaf;
-                        logic [31:1]         pc;
+                        logic [31:1]         pc; //PC
                         eh2_br_pkt_t         brp;
-                        logic [31:0]         inst;
+                        logic [31:0]         inst; //32bit指令字
                         eh2_predecode_pkt_t predecode;
-                        logic                pc4;
-                        logic [15:0]         cinst;
+                        logic                pc4;  //是否为32bit指令
+                        logic [15:0]         cinst; //16bit指令字
                        } eh2_ib_pkt_t;
 
 typedef struct packed {

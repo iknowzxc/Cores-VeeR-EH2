@@ -37,7 +37,7 @@ import eh2_pkg::*;
 
    input logic exu_flush_final,                // all flush sources: primary/secondary alu's, trap
 
-   input logic dec_i1_cancel_e1,
+   input logic dec_i1_cancel_e1, //zinan，这根信号用途不明，像是rewind信号？ TODO
 
 
    input eh2_br_pkt_t i0_brp,                      // i0 branch packet from aligner
@@ -211,7 +211,8 @@ import eh2_pkg::*;
    assign i1_cancel_e1 = dec_i1_cancel_e1;
 
    assign ibvalid[3:0] = ibval[3:0] | i0_wen[3:0] | {i1_wen[3:1],1'b0};
-
+//by zinan
+//ibuf.vld也是单独存储，原理相同，也需要考虑ibufer的移动、弹出
    assign ibval_in[3:0] = (({4{shift0}} & ((i1_cancel_e1) ? {ibval[2:0],1'b1} : ibvalid[3:0] )) |
                            ({4{shift1}} & {1'b0, ibvalid[3:1]}) |
                            ({4{shift2}} & {2'b0, ibvalid[3:2]})) & ~{4{flush_final}};
@@ -281,6 +282,9 @@ import eh2_pkg::*;
 // write -> csrrw %x0, %csr, %x0     {csr[11:0],00000001000001110011}
 
 // abstract memory command not done here
+//by zinan
+//ebug的抽象命令被转译成指令发往ibufer，例如write csr被转译成CSRW imm，这样可以避免debug和后端耦合在一起形成时序瓶颈。
+//debug的请求是vld only接口，猜测处理器这时已经halt，不需考虑和取指通路的仲裁
    assign debug_valid = dbg_cmd_valid & (dbg_cmd_type[1:0] != 2'h2) & (dbg_cmd_tid == tid);
 
 
@@ -321,7 +325,8 @@ import eh2_pkg::*;
                    ({$bits(eh2_ib_pkt_t){write_i1_ib3}} & ifu_i1_ibp);
 
    assign ib3_final = (i1_cancel_e1) ? ib2 : ib3_in;
-
+//by zinan
+//ibufer的实体，ibufer就保存在类似的结构中
    rvdffibie #(.WIDTH($bits(eh2_ib_pkt_t)),.LEFT(24),.PADLEFT(13),.MIDDLE(31),.PADRIGHT(47),.RIGHT(16)) ib3ff (.*, .en(ibwrite[3]), .din(ib3_final), .dout(ib3));
 
    assign ib2_in = ({$bits(eh2_ib_pkt_t){write_i0_ib2}} & ifu_i0_ibp) |
@@ -346,6 +351,8 @@ import eh2_pkg::*;
    assign ib0_raw = ({$bits(eh2_ib_pkt_t){write_i0_ib0}} & ifu_i0_ibp) |
                     ({$bits(eh2_ib_pkt_t){shift_ib1_ib0}} & ib1) |
                     ({$bits(eh2_ib_pkt_t){shift_ib2_ib0}} & ib2);
+//by zinan
+//debug只能进入entry0的位置，debug不存在预译码，大部分位域标记为0
    always_comb begin
       ib0_in = ib0_raw;
 
@@ -366,7 +373,8 @@ import eh2_pkg::*;
    end
 
    // timing optimization
-
+//by zinan
+//判断next cycle ibufer0的指令类型，优化仲裁的时序，i0 only表示什么指令类型暂不清楚
    assign lsu_in = (write_i0_ib0 & ifu_i0_predecode.lsu) |
                    (shift_ib1_ib0 & ib1.predecode.lsu) |
                    (shift_ib2_ib0 & ib2.predecode.lsu) |
@@ -423,7 +431,8 @@ import eh2_pkg::*;
    assign i1_br_p = ib1.brp;
    assign i0_br_p = ib0.brp;
 
-
+//by zinan
+//移动、fetch0写、fetch1写，三个写源头合并成4个entry的写使能。以相似的逻辑可以形成ibuf 4entry的写数据。
    assign ibwrite[3:0] = {  write_i0_ib3 | write_i1_ib3                                 | i1_cancel_e1,
                             write_i0_ib2 | write_i1_ib2 | shift_ib3_ib2                 | i1_cancel_e1,
                             write_i0_ib1 | write_i1_ib1 | shift_ib2_ib1 | shift_ib3_ib1 | i1_cancel_e1,
@@ -446,7 +455,8 @@ import eh2_pkg::*;
                    ({BRWIDTH{write_i1_ib3}} & ifu_i1_brdata);
 
    assign bp3_final = (i1_cancel_e1) ? bp2 : bp3_in;
-
+//by zinan
+//分支预测的buffer，工作原理与ibufer相同，存储在另外一个结构体内
    rvdffe #(BRWIDTH) bp3indexff (.*, .en(ibwrite[3]), .din(bp3_final), .dout(bp3));
 
 
@@ -496,7 +506,9 @@ import eh2_pkg::*;
    assign ib0_valid_d = ibval[0];
 
    assign ib0_valid_in = ibval_in[0];
-
+//by zinan
+//ibufer弹出能力为2，采用压缩式结构，根据弹出数量计算压缩数量，弹出一个entry向下压缩一步，弹出两个entry向下压缩两步，没有弹出entry则不压缩。
+//译码级2个线程共享，因此需要判断tid是否匹配。
    assign i0_decode_d = dec_i0_decode_d & (tid == dec_i0_tid_d);
    assign i1_decode_d = dec_i1_decode_d & (tid == dec_i1_tid_d);
 
@@ -507,12 +519,16 @@ import eh2_pkg::*;
    assign shift0 = ~shift1 & ~shift2;
 
 // save off prior i1 on shift2
-
+//by zinan
+//如果弹出两个entry，还要将ibufer【1】保存 下来，原因未知 TODO
    rvdffibie #(.WIDTH($bits(eh2_ib_pkt_t)),.LEFT(24),.PADLEFT(13),.MIDDLE(31),.PADRIGHT(47),.RIGHT(16)) ibsaveff (.*, .en(shift2), .din(ib1),    .dout(ibsave));
 
    rvdffe #(BRWIDTH)         bpsaveindexff (.*, .en(shift2), .din(bp1),  .dout(bpsave));
 
-
+//by zinan
+//517行首先根据移动情况计算新的ibufer.vld，移动优先于创建，只有移动后处于无效状态的entry才能被写入，ibufer的有0/1两个写口，
+//521-528行分别得到写口0对4个entry的写使能、写口1对4个entry的写使能。531-536行得到的是entry 3/2/1移动至0/1/2的移动情况。
+//ibufer是压缩式队列，有效性只可能为0000/0001/0011/0111/1111这几种情况
    // compute shifted ib valids to determine where to write
   assign shift_ibval[3:0] = ({4{shift1}} & {1'b0, ibval[3:1] }) |
                              ({4{shift2}} & {2'b0, ibval[3:2]}) |

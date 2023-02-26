@@ -812,19 +812,19 @@ endmodule
 module rvarbiter2_smt
   (
    input  logic       [1:0] flush,
-   input  logic       [1:0] ready_in,
-   input  logic       [1:0] lsu_in,
-   input  logic       [1:0] mul_in,
+   input  logic       [1:0] ready_in, //zinan 两个线程的ibufer【0】 next cycle是否有效
+   input  logic       [1:0] lsu_in,//zinan 两个线程的ibufer【0】 next cycle是否为LSU
+   input  logic       [1:0] mul_in,//zinan 两个线程的ibufer【0】 next cycle是否为MUL
    input  logic       [1:0] i0_only_in,
    input  logic       [1:0] thread_stall_in,
-   input  logic             force_favor_flip,
+   input  logic             force_favor_flip, //zinan 强制切换仲裁
    input  logic             shift,
    input  logic             clk,
    input  logic             rst_l,
    input  logic             scan_mode,
-   output logic [1:0]       ready,
-   output logic             i0_sel_i0_t1,
-   output logic [1:0]       i1_sel_i1,
+   output logic [1:0]       ready, //zinan 两个线程的ibuf0是否有效
+   output logic             i0_sel_i0_t1, //zinan 发射位0选择了哪个线程，发射位0必定从两个线程的ibuf0中选择
+   output logic [1:0]       i1_sel_i1, //zinan 发射位1选择了哪个entry，可能来源于4个entry中的一个
    output logic [1:0]       i1_sel_i0
    );
 
@@ -857,7 +857,8 @@ module rvarbiter2_smt
                         .din(eff_ready_in[1:0]),
                         .dout(ready[1:0])
                         );
-
+//by zinan
+//SMT 
    // optimize for power: only update favor bit when you have to
    assign update_favor_in = &eff_ready_in[1:0] & (lsu2_in | mul2_in | i0_only2_in);
 
@@ -867,7 +868,8 @@ module rvarbiter2_smt
                         .dout(update_favor)
                         );
 
-
+//by zinan
+//仲裁切换
    assign favor_in = (shift & (update_favor | force_favor_flip)) ? ~favor : favor;
 
    // i0_only optimization : make i0_only favored if at all possible
@@ -877,6 +879,8 @@ module rvarbiter2_smt
 
    assign favor_final = (force_favor_flip) ? favor_in : favor_final_raw;
 
+//by zinan
+//favor bit可以看作线程切换标记
    rvdff #(1) favor_ff (.*, .clk(clk), .din(favor_final),  .dout(favor) );
 
    // SMT optimization
@@ -895,6 +899,16 @@ module rvarbiter2_smt
                         .dout(fready[1:0])
                         );
 
+//by zinan
+//从2个线程的ibufer中选择2条指令送入译码级，用ibx【y】表示y线程的ibuf entry【x】，由于ibufer是压缩式队列，只有以下4种情况
+//ibuf0【0】        ibuf1【0】          ibuf0【1】            ibuf1【1】
+//1                0                  1                     0
+//1                0                  1                     1
+//1                1                  1                     0
+//1                1                  1                     1
+//选择逻辑如下
+//首先挑选第一条指令，i0 sel i0 t1，第一条指令符合仲裁逻辑：如果ibuf0【0】和ibuf0【1】都有效，根据仲裁结果选择；否则，选择有效的那个
+//再挑选第二条指令，i1 sel ix【y】，第二条指令使得两个线程尽量公平：尽量在另外一个线程中挑选，除非另外一个线程没有有效指令
    assign i0_sel_i0_t1 = (fready[1]&favor) | (!fready[0]);
 
    assign i1_sel_i1[1] = (!fready[0]);
