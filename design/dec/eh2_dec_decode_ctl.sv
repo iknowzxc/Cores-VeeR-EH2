@@ -812,15 +812,15 @@ always_comb begin
 end // always_comb begin
 
 
-
-   assign      i0_notbr_error = i0_brp_valid & ~(i0_dp_raw.condbr | i0_pcall_raw | i0_pja_raw | i0_pret_raw);
+//ID级判断分支类型是否预测成功
+   assign      i0_notbr_error = i0_brp_valid & ~(i0_dp_raw.condbr | i0_pcall_raw | i0_pja_raw | i0_pret_raw); //预测类型全错
 
    // no toffset error for a pret
    assign      i0_br_toffset_error = i0_brp_valid & dec_i0_brp.hist[1] & (dec_i0_bp_toffset[pt.BTB_TOFFSET_SIZE-1:0] != i0_br_offset[pt.BTB_TOFFSET_SIZE-1:0]) & !i0_pret_raw;
-   assign      i0_ret_error = i0_brp_valid & (dec_i0_brp.ret ^ i0_pret_raw);
-   assign      i0_br_error =  dec_i0_brp.br_error | i0_notbr_error | i0_br_toffset_error | i0_ret_error;
+   assign      i0_ret_error = i0_brp_valid & (dec_i0_brp.ret ^ i0_pret_raw); //错误预测为RET
+   assign      i0_br_error =  dec_i0_brp.br_error | i0_notbr_error | i0_br_toffset_error | i0_ret_error; //错误预测为BXX
 
-   assign      i0_br_error_all = (i0_br_error | dec_i0_brp.br_start_error) & ~leak1_mode[dd.i0tid];
+   assign      i0_br_error_all = (i0_br_error | dec_i0_brp.br_start_error) & ~leak1_mode[dd.i0tid]; //？leak1 mode？
 
    assign      i0_br_error_fast = (dec_i0_brp.br_error | dec_i0_brp.br_start_error) & ~leak1_mode[dd.i0tid];
 
@@ -896,6 +896,7 @@ end // always_comb begin
    // on i0 instruction fetch access fault turn anything into a nop
    // nop =>   alu rs1 imm12 rd lor
 
+//这一段判断指令非法？
    assign i0_icaf_d = dec_i0_icaf_d | dec_i0_dbecc_d;
    assign i1_icaf_d = dec_i1_icaf_d | dec_i1_dbecc_d;
 
@@ -1073,6 +1074,7 @@ end // always_comb begin
    assign i1_ap_pc2 = ~dec_i1_pc4_d;
    assign i1_ap_pc4 =  dec_i1_pc4_d;
 
+//inst1将inst0取消掉？
    assign i1_cancel_d = i0_dp.load & i1_depend_i0_d & i1_legal_decode_d & ~i0_br_error_all & ~i1_br_error_all;  // no decode if flush
 
 
@@ -1195,6 +1197,7 @@ end // always_comb begin
 
 // end pmu
 
+//译码主体，得到两条指令的译码信息，是哪种类型的指令，是否需要rs rd等
    eh2_dec_dec_ctl i0_dec (.inst(i0[31:0]),.predecode(dec_i0_predecode),.out(i0_dp_raw));
 
    eh2_dec_dec_ctl i1_dec (.inst(i1[31:0]),.predecode(dec_i1_predecode),.out(i1_dp_raw));
