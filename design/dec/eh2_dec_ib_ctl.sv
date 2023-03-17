@@ -37,7 +37,7 @@ import eh2_pkg::*;
 
    input logic exu_flush_final,                // all flush sources: primary/secondary alu's, trap
 
-   input logic dec_i1_cancel_e1, //zinan，这根信号用途不明，像是rewind信号？ TODO
+   input logic dec_i1_cancel_e1, //确认这是一根rewind信号，rewind能力为1
 
 
    input eh2_br_pkt_t i0_brp,                      // i0 branch packet from aligner
@@ -525,15 +525,15 @@ import eh2_pkg::*;
 
    rvdffe #(BRWIDTH)         bpsaveindexff (.*, .en(shift2), .din(bp1),  .dout(bpsave));
 
-//by zinan
-//517行首先根据移动情况计算新的ibufer.vld，移动优先于创建，只有移动后处于无效状态的entry才能被写入，ibufer的有0/1两个写口，
-//521-528行分别得到写口0对4个entry的写使能、写口1对4个entry的写使能。531-536行得到的是entry 3/2/1移动至0/1/2的移动情况。
-//ibufer是压缩式队列，有效性只可能为0000/0001/0011/0111/1111这几种情况
+
    // compute shifted ib valids to determine where to write
   assign shift_ibval[3:0] = ({4{shift1}} & {1'b0, ibval[3:1] }) |
                              ({4{shift2}} & {2'b0, ibval[3:2]}) |
                              ({4{shift0}} & ibval[3:0]);
 
+//ibufer是压缩式队列，有效性只可能为0000/0001/0011/0111/1111这几种情况
+//首先根据移动情况计算新的ibufer.vld，移动优先于创建，只有移动后处于无效状态的entry才能被写入，ibufer的有0/1两个写口，
+//分别得到写口0对4个entry的写使能、写口1对4个entry的写使能。
    assign write_i0_ib0 = ~shift_ibval[0]                & (ifu_i0_val | debug_valid);
    assign write_i0_ib1 =  shift_ibval[0] & ~shift_ibval[1] & ifu_i0_val;
    assign write_i0_ib2 =  shift_ibval[1] & ~shift_ibval[2] & ifu_i0_val;
@@ -543,7 +543,7 @@ import eh2_pkg::*;
    assign write_i1_ib2 =  shift_ibval[0] & ~shift_ibval[1] & ifu_i1_val;
    assign write_i1_ib3 =  shift_ibval[1] & ~shift_ibval[2] & ifu_i1_val;
 
-
+//得到的是entry 3/2/1移动至0/1/2的移动情况。
    assign shift_ib1_ib0 = shift1 & ibval[1];
    assign shift_ib2_ib1 = shift1 & ibval[2];
    assign shift_ib3_ib2 = shift1 & ibval[3];

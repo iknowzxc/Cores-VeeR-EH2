@@ -780,7 +780,7 @@ import eh2_pkg::*;
    // qual i0_brp_valid with icaf; no need to qual i1_brp_valid since it wont decode if icaf
    assign i0_brp_valid = dec_i0_brp.valid & ~leak1_mode[dd.i0tid] & ~i0_icaf_d;
 
-
+//创建了一个预测类型结构体，其中一部分（.pcall .pja .pret)来源于译码结果，这一部分相当于被纠正了。另一部分来源于预测结果
 always_comb begin
    i0_predict_p_d = '0;
 
@@ -813,7 +813,7 @@ end // always_comb begin
 
 
 //ID级判断分支类型是否预测成功
-   assign      i0_notbr_error = i0_brp_valid & ~(i0_dp_raw.condbr | i0_pcall_raw | i0_pja_raw | i0_pret_raw); //预测类型全错
+   assign      i0_notbr_error = i0_brp_valid & ~(i0_dp_raw.condbr | i0_pcall_raw | i0_pja_raw | i0_pret_raw); //预测为分支指令但不是分支指令
 
    // no toffset error for a pret
    assign      i0_br_toffset_error = i0_brp_valid & dec_i0_brp.hist[1] & (dec_i0_bp_toffset[pt.BTB_TOFFSET_SIZE-1:0] != i0_br_offset[pt.BTB_TOFFSET_SIZE-1:0]) & !i0_pret_raw;
@@ -824,6 +824,8 @@ end // always_comb begin
 
    assign      i0_br_error_fast = (dec_i0_brp.br_error | dec_i0_brp.br_start_error) & ~leak1_mode[dd.i0tid];
 
+
+//TODO，存在预测错误后拉起一个标记，直到TLU flush后再撤销
    // errors go to i0 only
   if(pt.BTB_FULLYA) begin
       logic [pt.NUM_THREADS-1:0] i0_btb_error_found, i0_btb_error_found_f;
@@ -896,7 +898,7 @@ end // always_comb begin
    // on i0 instruction fetch access fault turn anything into a nop
    // nop =>   alu rs1 imm12 rd lor
 
-//这一段判断指令非法？
+//这一段判断指令非法,icaf:access fault, dbecc:double bit ecc error
    assign i0_icaf_d = dec_i0_icaf_d | dec_i0_dbecc_d;
    assign i1_icaf_d = dec_i1_icaf_d | dec_i1_dbecc_d;
 
@@ -947,6 +949,7 @@ end // always_comb begin
    assign i0_predict_nt = ~(dec_i0_brp.hist[1] & i0_brp_valid) & i0_predict_br;
    assign i0_predict_t  =  (dec_i0_brp.hist[1] & i0_brp_valid) & i0_predict_br;
 
+//alu packet
    always_comb begin
       i0_ap = '0;
 
