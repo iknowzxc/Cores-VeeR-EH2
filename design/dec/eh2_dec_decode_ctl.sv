@@ -2128,7 +2128,7 @@ end
 
 
 // scheduling logic for primary and secondary alu's
-
+//和前序指令存在RAW：当前指令的rs1/rs2是某条前序指令的rd
    assign i0_rs1_depend_i0_e1 = dec_i0_rs1_en_d & e1d.i0v & (e1d.i0rd[4:0] == i0r.rs1[4:0]) & (e1d.i0tid == dd.i0tid);
    assign i0_rs1_depend_i0_e2 = dec_i0_rs1_en_d & e2d.i0v & (e2d.i0rd[4:0] == i0r.rs1[4:0]) & (e2d.i0tid == dd.i0tid);
    assign i0_rs1_depend_i0_e3 = dec_i0_rs1_en_d & e3d.i0v & (e3d.i0rd[4:0] == i0r.rs1[4:0]) & (e3d.i0tid == dd.i0tid);
@@ -2178,6 +2178,8 @@ end
    assign i1_rs2_depend_i1_e4 = dec_i1_rs2_en_d & e4d.i1v & (e4d.i1rd[4:0] == i1r.rs2[4:0]) & (e4d.i1tid == dd.i1tid);
    assign i1_rs2_depend_i1_wb = dec_i1_rs2_en_d & wbd.i1v & (wbd.i1rd[4:0] == i1r.rs2[4:0]) & (wbd.i1tid == dd.i1tid);
 
+
+//forwarding标志
 // define bypasses for e2 stage - 1 is youngest
 
    assign dd.i0rs1bype2[1:0] = {  i0_dp.alu & i0_rs1_depth_d[3:0] == 4'd5 & i0_rs1_class_d.sec,
@@ -2310,7 +2312,7 @@ end
 
 // order the producers as follows:  i1_e1 - 1, i0_e1 - 2, i1_e2 - 3, ..., i1_wb - 9, i0_wb - 10
 
-
+//将指令的依赖关系转换为数字
    assign {i0_rs1_class_d, i0_rs1_depth_d[3:0]} =
                                                   (i0_rs1_depend_i1_e1) ? { i1_e1c, 4'd1 } :
                                                   (i0_rs1_depend_i0_e1) ? { i0_e1c, 4'd2 } :
